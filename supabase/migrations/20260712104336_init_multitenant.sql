@@ -62,7 +62,7 @@ begin
     new.id,
     new.email,
     case
-      when new.email = 'ruanbraz@overlens.com.br' then 'admin'
+      when new.email = 'nicolaijunior@gmail.com' then 'admin'
       else 'member'
     end
   )

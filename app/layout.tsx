@@ -1,0 +1,26 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/AppShell";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+
+export const metadata: Metadata = {
+  title: "BusinessOS",
+  description: "BusinessOS",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className={cn("h-full antialiased", "font-sans", inter.variable)}>
+      <body className={`${inter.variable} font-sans min-h-full flex flex-col`}>
+        <AppShell>{children}</AppShell>
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,25 @@
+name: Supabase Keepalive
+
+# Roda a cada 7 dias (domingo, 03:00 UTC) para gerar uma requisicao real
+# ao banco do Supabase e evitar a pausa automatica do plano free por
+# inatividade. Tambem pode ser disparado manualmente pela aba Actions.
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insere uma linha em keepalive via REST API do Supabase
+        env:
+          SUPABASE_URL: https://fatkptoxeeegmobklahg.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdGtwdG94ZWVlZ21vYmtsYWhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MzE1MzcsImV4cCI6MjA5OTQwNzUzN30.YyH0wIG6GmHIJCXO5euBwJyjtQiMM_sfLWarMUUQHIM
+        run: |
+          curl -sf -X POST "$SUPABASE_URL/rest/v1/keepalive" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"source":"github-actions"}'

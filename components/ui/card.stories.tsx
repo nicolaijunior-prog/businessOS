@@ -1,72 +1,48 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { Button } from "./button"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./card"
+} from "@/components/ui/card";
 
+/**
+ * Card no design "Flux": cantos bem arredondados (rounded-3xl), sombra suave e
+ * sem borda dura, sobre o canvas limao. Respiro generoso no header/content.
+ */
 const meta = {
   title: "UI/Card",
   component: Card,
   parameters: {
     layout: "centered",
   },
-  tags: ["autodocs"],
-  argTypes: {
-    size: {
-      control: "select",
-      options: ["default", "sm"],
-    },
-  },
-  render: (args) => (
-    <Card {...args} className="w-80">
+} satisfies Meta<typeof Card>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  render: () => (
+    <Card className="w-80">
       <CardHeader>
-        <CardTitle>Project alpha</CardTitle>
-        <CardDescription>
-          A short summary describing what this card represents.
-        </CardDescription>
-        <CardAction>
-          <Button variant="ghost" size="icon-sm">
-            ⋮
-          </Button>
-        </CardAction>
+        <CardTitle>Tese de valor</CardTitle>
+        <CardDescription>Por que o cliente pagaria.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          This is the main content area of the card, where the bulk of the
-          information lives.
-        </p>
+      <CardContent className="text-sm text-muted-foreground">
+        Rascunho pronto para revisao do founder.
       </CardContent>
-      <CardFooter>
-        <Button size="sm" variant="outline">
-          Cancel
+      <CardFooter className="gap-2">
+        <Button variant="brand" size="sm">
+          Aprovar
         </Button>
-        <Button size="sm" className="ml-2">
-          Confirm
-        </Button>
+        <Badge variant="brandMuted">needs_review</Badge>
       </CardFooter>
     </Card>
   ),
-} satisfies Meta<typeof Card>
-
-export default meta
-
-type Story = StoryObj<typeof meta>
-
-export const Default: Story = {
-  args: {
-    size: "default",
-  },
-}
-
-export const Small: Story = {
-  args: {
-    size: "sm",
-  },
-}
+};

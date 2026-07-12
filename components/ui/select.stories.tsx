@@ -1,59 +1,42 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "./select"
+} from "@/components/ui/select";
 
+/**
+ * Select no design "Flux": trigger pill coerente com o input e content
+ * flutuante bem arredondado (rounded-2xl), foco limao.
+ */
 const meta = {
   title: "UI/Select",
   component: Select,
-  tags: ["autodocs"],
-} satisfies Meta<typeof Select>
+  parameters: {
+    layout: "centered",
+  },
+} satisfies Meta<typeof Select>;
 
-export default meta
-type Story = StoryObj<typeof meta>
+export default meta;
+
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  render: (args) => (
-    <Select {...args}>
-      <SelectTrigger className="w-48">
-        <SelectValue placeholder="Select a plan" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="free">Free</SelectItem>
-        <SelectItem value="pro">Pro</SelectItem>
-        <SelectItem value="enterprise">Enterprise</SelectItem>
-      </SelectContent>
-    </Select>
+  render: () => (
+    <div className="w-80">
+      <Select>
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione a secao" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="direcao">Direcao</SelectItem>
+          <SelectItem value="validacao">Validacao</SelectItem>
+          <SelectItem value="caixa">Caixa</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   ),
-}
-
-export const WithGroups: Story = {
-  render: (args) => (
-    <Select {...args}>
-      <SelectTrigger className="w-56">
-        <SelectValue placeholder="Assign to a team member" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Product</SelectLabel>
-          <SelectItem value="ana">Ana Souza</SelectItem>
-          <SelectItem value="bruno">Bruno Lima</SelectItem>
-        </SelectGroup>
-        <SelectSeparator />
-        <SelectGroup>
-          <SelectLabel>Sales</SelectLabel>
-          <SelectItem value="carla">Carla Nunes</SelectItem>
-          <SelectItem value="diego">Diego Alves</SelectItem>
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  ),
-}
+};

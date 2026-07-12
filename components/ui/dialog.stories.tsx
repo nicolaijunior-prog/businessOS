@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { Button } from "./button"
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -10,63 +10,77 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./dialog"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
+/**
+ * Dialog no design "Flux": superficie flutuante bem arredondada (rounded-3xl)
+ * sobre bg-card, com sombra suave e foco limao (ring-ring). Composto por
+ * Root/Trigger/Content/Header/Title/Description/Footer — as stories montam a
+ * composicao completa. A story padrao abre por default para aparecer no canvas.
+ */
 const meta = {
   title: "UI/Dialog",
   component: Dialog,
   parameters: {
     layout: "centered",
   },
-  tags: ["autodocs"],
-} satisfies Meta<typeof Dialog>
+} satisfies Meta<typeof Dialog>;
 
-export default meta
+export default meta;
 
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  render: (args) => (
-    <Dialog {...args}>
-      <DialogTrigger render={<Button variant="outline" />}>
-        Open dialog
+export const Aberto: Story = {
+  render: () => (
+    <Dialog open>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar entidade</DialogTitle>
+          <DialogDescription>
+            Ajuste o titulo e o resumo. Voce propoe; o founder aprova na UI.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label htmlFor="dialog-title">Titulo</Label>
+            <Input id="dialog-title" defaultValue="Perfil ideal de cliente" />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="dialog-summary">Resumo</Label>
+            <Input id="dialog-summary" placeholder="Uma frase clara..." />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost">Cancelar</Button>
+          <Button variant="brand">Propor mudanca</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  ),
+};
+
+export const ComGatilho: Story = {
+  render: () => (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline">Abrir dialogo</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Are you sure?</DialogTitle>
+          <DialogTitle>Arquivar entidade</DialogTitle>
           <DialogDescription>
-            This action cannot be undone. This will permanently remove the
-            selected item.
+            Esta acao move o card para o arquivo. Voce pode restaurar depois.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>
-            Cancel
+          <DialogClose asChild>
+            <Button variant="ghost">Cancelar</Button>
           </DialogClose>
-          <Button variant="destructive">Confirm</Button>
+          <Button variant="destructive">Arquivar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   ),
-}
-
-export const WithoutCloseButton: Story = {
-  render: (args) => (
-    <Dialog {...args}>
-      <DialogTrigger render={<Button variant="outline" />}>
-        Open dialog
-      </DialogTrigger>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Update payment method</DialogTitle>
-          <DialogDescription>
-            Add a new payment method to your account.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter showCloseButton>
-          <Button>Save changes</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  ),
-}
+};

@@ -1,59 +1,89 @@
 # BusinessOS
 
-O sistema operacional do negócio de um founder solo: um lugar único, sempre atualizado, com tudo que é essencial para operar e decidir — do "quem eu sou como founder" até o caixa. Não é um CRM nem um ERP completo; é uma ferramenta de apoio à decisão que mantém o estado real do negócio legível tanto para o founder quanto para agentes de IA que trabalham junto com ele.
+Um "OS de decisao" para founder. Cada entidade do negocio (objetivo, ICP, tese de
+valor, oferta, caixa, ...) e um card com **frontmatter estruturado + corpo Markdown**
+— a mesma superficie que a UI edita e que agentes de IA leem/escrevem por uma porta
+unica (`lib/content/repository.ts`), sempre no fluxo `propose -> needs_review -> founder
+aprova`.
 
-O conteúdo de negócio vive em arquivos Markdown com frontmatter (não em banco de dados) — a UI web é apenas uma camada amigável por cima desses arquivos, que continuam sendo a fonte da verdade e podem ser lidos/editados diretamente por agentes de IA ou pelo founder.
+Stack: Next.js (App Router) + TypeScript + Tailwind/shadcn-ui + zod. Persistencia em
+**Postgres/Supabase multi-tenant** (com fallback local em arquivos). Ver
+`docs/04-technical-spec.md` e o **ADR 0001**
+(`docs/decisions/0001-persistencia-supabase-multitenant.md`).
 
-Para o racional completo do produto (problema, por que Markdown, quem usa, princípios de design), veja **[docs/BRIEFING.md](docs/BRIEFING.md)**. Também disponíveis: [docs/PRD.md](docs/PRD.md) e [docs/SPEC.md](docs/SPEC.md).
+## Persistencia: dois modos
 
-## Como rodar
+Selecionados por `CONTENT_STORE` (`lib/config.ts`):
+
+- **`file`** (default) — as 11 entidades vivem como arquivos MD em `content/`. Nao
+  exige Supabase nem login. Ideal para dev, testes e rollback.
+- **`supabase`** — Postgres/Supabase, **multi-tenant**: cada usuario tem a sua copia
+  das entidades, isolada por RLS (`auth.uid()`), com **autenticacao** (Supabase Auth).
+  Modo de producao.
+
+A **forma** do conteudo (schema, `REGISTRY`, templates, frontmatter) e identica nos dois
+modos — muda so a camada de armazenamento por tras da interface `ContentStore`.
+
+## Setup
+
+### 1. Dependencias
 
 ```bash
-npm install
-
-# app Next.js em http://localhost:3000
-npm run dev
-
-# Storybook (documentação de componentes) em http://localhost:6006
-npm run storybook
+pnpm install
 ```
 
-Outros comandos úteis:
+### 2. Ambiente
 
 ```bash
-npm run build             # build de produção do Next.js
-npm run build-storybook   # build estático do Storybook
-npm run lint               # ESLint
+cp .env.example .env.local
 ```
 
-## Estrutura de pastas
+Preencha `.env.local` (ver comentarios no `.env.example`). Para comecar rapido em
+**modo file**, basta `CONTENT_STORE=file` — nenhuma chave Supabase e necessaria.
 
-```text
-content/            Conteúdo de negócio em .md + frontmatter — a fonte da verdade.
-  founder/           objetivo, estilo-de-vida
-  direcao/            mapa-do-mercado, mapa-e-ima-de-problemas, perfil-ideal-de-cliente,
-                       tese-de-valor, oferta
-  validacao/          primeiros-passos  (Oferta é compartilhada com direcao/, não duplicada)
-  caixa/              fluxo-de-caixa, erp
+### 3. Rodar (modo file)
 
-lib/content/         Camada de acesso ao conteúdo: registry (mapa slug -> arquivo/schema),
-                      schemas (zod), read/write (frontmatter <-> disco), actions (server actions).
-
-app/                 Rotas Next.js (App Router) — uma pasta por página, ex. app/direcao/oferta/.
-                      app/direcao/oferta e app/validacao/oferta renderizam o mesmo componente
-                      OfertaPage, pois Oferta é uma seção compartilhada entre Direção e Validação.
-
-components/
-  pages/              Um componente de página por seção de conteúdo (ex. OfertaPage.tsx).
-  forms/               Formulários (react-hook-form + zod) por página, e primitivas de campo.
-  content/            Cards, grid/list de conteúdo, toggle de modo de visualização.
-  layout/             AppShell, Sidebar, PageHeader.
-  ui/                 Componentes shadcn/ui (button, card, dialog, select, etc.).
-
-docs/                BRIEFING.md, PRD.md, SPEC.md.
-stories/             Stories padrão do Storybook (exemplo/onboarding).
+```bash
+pnpm seed        # cria os 11 arquivos MD ausentes a partir do REGISTRY (idempotente)
+pnpm dev         # http://localhost:3000
 ```
 
-## Supabase (uso futuro)
+### 4. Rodar (modo supabase)
 
-O arquivo `.mcp.json` na raiz já tem o servidor MCP do Supabase configurado (`project_ref: fatkptoxeeegmobklahg`), mas isso é **apenas para constar** — não há integração implementada hoje. Os arquivos Markdown em `content/` continuam sendo a única fonte de dados. Supabase entraria em cena apenas se o projeto precisar evoluir para um backend com banco de dados (consultas estruturadas, multiusuário, escala).
+1. Crie um projeto no [Supabase](https://supabase.com) e pegue as chaves em
+   **Project Settings > API**.
+2. Preencha em `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e
+   `CONTENT_STORE=supabase`.
+3. Aplique as migrations de `supabase/migrations/` ao projeto (via Supabase CLI ou o
+   painel SQL). Elas criam `profiles`, `content_entities` (com RLS de isolamento por
+   tenant), o trigger de provisionamento de profile no signup e o bucket privado
+   `attachments`.
+4. `pnpm dev`. Com auth ligada, rotas de app exigem sessao; o founder
+   (`FOUNDER_EMAIL`) entra como `admin`, demais usuarios como `member` com os cards
+   vazios.
+
+> **IA (opcional):** definir `ANTHROPIC_API_KEY` liga a IA no runtime (`AI_ENABLED`).
+> Sem a chave, as acoes de IA ficam desabilitadas — o resto do app funciona normalmente.
+
+## Comandos uteis
+
+```bash
+pnpm dev             # servidor de desenvolvimento
+pnpm build           # build de producao
+pnpm typecheck       # tsc --noEmit
+pnpm lint            # eslint
+pnpm seed            # semeia content/ (modo file)
+pnpm content:check   # valida todo o content/
+pnpm agent:read      # CLI de leitura para agentes (ver AGENTS.md / CLAUDE.md)
+pnpm agent:write     # CLI de escrita (proposta) para agentes
+```
+
+## Documentacao
+
+- `CLAUDE.md` — guia para agentes (porta unica, alcada, fluxo de proposta).
+- `AGENTS.md` — registro de agentes/skills e suas alcadas.
+- `docs/02-content-model.md` — modelo de conteudo (frontmatter + schema).
+- `docs/04-technical-spec.md` — arquitetura, camadas e stack.
+- `docs/decisions/0001-persistencia-supabase-multitenant.md` — ADR da persistencia
+  Supabase multi-tenant.

@@ -1,55 +1,39 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { Input } from "./input"
+import { Input } from "@/components/ui/input";
 
+/**
+ * Input no design "Flux": pill (rounded-full) sobre bg-card, borda suave e
+ * foco limao (ring-ring).
+ */
 const meta = {
   title: "UI/Input",
   component: Input,
   parameters: {
     layout: "centered",
   },
-  tags: ["autodocs"],
-  argTypes: {
-    type: {
-      control: "select",
-      options: ["text", "email", "password", "number", "search"],
-    },
-    disabled: {
-      control: "boolean",
-    },
-  },
   args: {
-    placeholder: "Type something…",
+    placeholder: "Digite aqui...",
   },
-  render: (args) => (
-    <div className="w-72">
-      <Input {...args} />
-    </div>
-  ),
-} satisfies Meta<typeof Input>
+  decorators: [
+    (Story) => (
+      <div className="w-80">
+        <Story />
+      </div>
+    ),
+  ],
+} satisfies Meta<typeof Input>;
 
-export default meta
+export default meta;
 
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    type: "text",
-  },
-}
+export const Default: Story = {};
+
+export const Filled: Story = {
+  args: { defaultValue: "BusinessOS" },
+};
 
 export const Disabled: Story = {
-  args: {
-    type: "text",
-    disabled: true,
-    defaultValue: "Can't touch this",
-  },
-}
-
-export const Invalid: Story = {
-  args: {
-    type: "email",
-    "aria-invalid": true,
-    defaultValue: "not-an-email",
-  },
-}
+  args: { disabled: true, defaultValue: "Somente leitura" },
+};

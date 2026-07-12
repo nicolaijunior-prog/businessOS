@@ -1,82 +1,196 @@
-"use client"
+"use client";
 
-import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-function Tabs({
-  className,
-  orientation = "horizontal",
-  ...props
-}: TabsPrimitive.Root.Props) {
-  return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      data-orientation={orientation}
-      className={cn(
-        "group/tabs flex gap-2 data-horizontal:flex-col",
-        className
-      )}
-      {...props}
-    />
-  )
+/**
+ * Tabs no estilo "Flux" — um segmented control pill (trilho `rounded-full`
+ * off-white, aba ativa vira card branco com sombra). Implementação própria e
+ * leve (sem dependência nova), acessível: `role=tablist/tab/tabpanel`, seleção
+ * por setas ← →, e vínculo `aria-controls`/`aria-labelledby`.
+ *
+ * Uso:
+ *   <Tabs defaultValue="empresas">
+ *     <TabsList>
+ *       <TabsTrigger value="empresas">Empresas</TabsTrigger>
+ *       <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
+ *     </TabsList>
+ *     <TabsContent value="empresas">…</TabsContent>
+ *     <TabsContent value="pessoas">…</TabsContent>
+ *   </Tabs>
+ */
+
+interface TabsContextValue {
+  value: string;
+  setValue: (value: string) => void;
+  /** Base de id para vincular trigger↔painel via aria. */
+  baseId: string;
 }
 
-const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
-  {
-    variants: {
-      variant: {
-        default: "bg-muted",
-        line: "gap-1 bg-transparent",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
+const TabsContext = React.createContext<TabsContextValue | null>(null);
+
+function useTabs(component: string): TabsContextValue {
+  const ctx = React.useContext(TabsContext);
+  if (!ctx) {
+    throw new Error(`${component} precisa estar dentro de <Tabs>.`);
   }
-)
+  return ctx;
+}
 
-function TabsList({
+export interface TabsProps {
+  /** Valor controlado. */
+  value?: string;
+  /** Valor inicial (modo não-controlado). */
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  className?: string;
+  children: React.ReactNode;
+}
+
+export function Tabs({
+  value: controlled,
+  defaultValue,
+  onValueChange,
   className,
-  variant = "default",
-  ...props
-}: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
+  children,
+}: TabsProps) {
+  const isControlled = controlled !== undefined;
+  const [internal, setInternal] = React.useState(defaultValue ?? "");
+  const value = isControlled ? controlled : internal;
+  const baseId = React.useId();
+
+  const setValue = React.useCallback(
+    (next: string) => {
+      if (!isControlled) setInternal(next);
+      onValueChange?.(next);
+    },
+    [isControlled, onValueChange],
+  );
+
   return (
-    <TabsPrimitive.List
-      data-slot="tabs-list"
-      data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
-      {...props}
-    />
-  )
+    <TabsContext.Provider value={{ value, setValue, baseId }}>
+      <div className={className}>{children}</div>
+    </TabsContext.Provider>
+  );
 }
 
-function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
+export interface TabsListProps {
+  className?: string;
+  children: React.ReactNode;
+  /** Rótulo acessível do grupo de abas. */
+  "aria-label"?: string;
+}
+
+export function TabsList({
+  className,
+  children,
+  "aria-label": ariaLabel,
+}: TabsListProps) {
+  const listRef = React.useRef<HTMLDivElement>(null);
+
+  // Navegação por teclado entre as abas (setas horizontais + Home/End).
+  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    const triggers = Array.from(
+      listRef.current?.querySelectorAll<HTMLButtonElement>(
+        '[role="tab"]:not([disabled])',
+      ) ?? [],
+    );
+    if (triggers.length === 0) return;
+    const current = triggers.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    event.preventDefault();
+    let nextIndex = current;
+    if (event.key === "ArrowRight") nextIndex = (current + 1) % triggers.length;
+    else if (event.key === "ArrowLeft")
+      nextIndex = (current - 1 + triggers.length) % triggers.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = triggers.length - 1;
+    triggers[nextIndex]?.focus();
+    triggers[nextIndex]?.click();
+  }
+
   return (
-    <TabsPrimitive.Tab
-      data-slot="tabs-trigger"
+    <div
+      ref={listRef}
+      role="tablist"
+      aria-label={ariaLabel}
+      onKeyDown={onKeyDown}
       className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
-        "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
-        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
-        className
+        "inline-flex items-center gap-1 rounded-full bg-secondary/70 p-1",
+        className,
       )}
-      {...props}
-    />
-  )
+    >
+      {children}
+    </div>
+  );
 }
 
-function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
+export interface TabsTriggerProps {
+  value: string;
+  className?: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+}
+
+export function TabsTrigger({
+  value,
+  className,
+  disabled,
+  children,
+}: TabsTriggerProps) {
+  const { value: active, setValue, baseId } = useTabs("TabsTrigger");
+  const selected = active === value;
   return (
-    <TabsPrimitive.Panel
-      data-slot="tabs-content"
-      className={cn("flex-1 text-sm outline-none", className)}
-      {...props}
-    />
-  )
+    <button
+      type="button"
+      role="tab"
+      id={`${baseId}-tab-${value}`}
+      aria-selected={selected}
+      aria-controls={`${baseId}-panel-${value}`}
+      tabIndex={selected ? 0 : -1}
+      disabled={disabled}
+      onClick={() => setValue(value)}
+      className={cn(
+        "inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "disabled:pointer-events-none disabled:opacity-50",
+        selected
+          ? "bg-card text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground",
+        className,
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
+export interface TabsContentProps {
+  value: string;
+  className?: string;
+  children: React.ReactNode;
+}
+
+export function TabsContent({ value, className, children }: TabsContentProps) {
+  const { value: active, baseId } = useTabs("TabsContent");
+  const selected = active === value;
+  return (
+    <div
+      role="tabpanel"
+      id={`${baseId}-panel-${value}`}
+      aria-labelledby={`${baseId}-tab-${value}`}
+      hidden={!selected}
+      tabIndex={0}
+      className={cn(
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
+    >
+      {selected ? children : null}
+    </div>
+  );
+}

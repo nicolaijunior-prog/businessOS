@@ -1,8 +1,16 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
+/**
+ * Cliente Supabase para o SERVIDOR (RSC, Server Actions, Route Handlers).
+ * Le/escreve a sessao nos cookies do request via `@supabase/ssr`. Autentica como
+ * o usuario logado — todas as queries respeitam a RLS (isolamento por tenant).
+ *
+ * `setAll` pode lancar quando chamado de um Server Component (cookies read-only);
+ * nesse caso o refresh de sessao e feito pelo middleware — engolimos o erro.
+ */
 export async function createClient() {
-  const cookieStore = await cookies()
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,19 +18,18 @@ export async function createClient() {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set(name, value, options);
+            }
           } catch {
-            // chamado a partir de um Server Component — pode ignorar,
-            // o middleware (se existir) cuida de renovar a sessão
+            // Chamado de um Server Component: ignoravel (middleware faz o refresh).
           }
         },
       },
-    }
-  )
+    },
+  );
 }

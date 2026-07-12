@@ -1,41 +1,52 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { Separator } from "./separator"
+import { Separator } from "@/components/ui/separator";
 
+/**
+ * Separator no design "Flux": fio sutil (bg-border) que respira entre blocos.
+ * Aceita orientacao horizontal (padrao) e vertical, usado para agrupar meta e
+ * acoes na tipografia Geist.
+ */
 const meta = {
   title: "UI/Separator",
   component: Separator,
-  tags: ["autodocs"],
-} satisfies Meta<typeof Separator>
+  parameters: {
+    layout: "centered",
+  },
+} satisfies Meta<typeof Separator>;
 
-export default meta
-type Story = StoryObj<typeof meta>
+export default meta;
+
+type Story = StoryObj<typeof meta>;
 
 export const Horizontal: Story = {
-  render: (args) => (
-    <div className="w-64">
-      <div className="text-sm font-medium">BusinessOS</div>
-      <div className="text-sm text-muted-foreground">Workspace settings</div>
-      <Separator {...args} className="my-4" />
-      <div className="text-sm">Members</div>
+  render: () => (
+    <div className="w-80 space-y-4">
+      <div className="space-y-1">
+        <h4 className="text-sm font-medium leading-none">Direcao</h4>
+        <p className="text-sm text-muted-foreground">
+          Mapa do mercado, ICP e tese de valor.
+        </p>
+      </div>
+      <Separator />
+      <div className="space-y-1">
+        <h4 className="text-sm font-medium leading-none">Validacao</h4>
+        <p className="text-sm text-muted-foreground">
+          Oferta e primeiros clientes.
+        </p>
+      </div>
     </div>
   ),
-  args: {
-    orientation: "horizontal",
-  },
-}
+};
 
 export const Vertical: Story = {
-  render: (args) => (
-    <div className="flex h-8 items-center gap-4">
-      <span className="text-sm">Docs</span>
-      <Separator {...args} />
-      <span className="text-sm">Settings</span>
-      <Separator {...args} />
-      <span className="text-sm">Billing</span>
+  render: () => (
+    <div className="flex h-8 items-center gap-4 text-sm">
+      <span>Ler</span>
+      <Separator orientation="vertical" />
+      <span>Propor</span>
+      <Separator orientation="vertical" />
+      <span>Aprovar</span>
     </div>
   ),
-  args: {
-    orientation: "vertical",
-  },
-}
+};
